@@ -185,7 +185,6 @@ export default function Home() {
               <p className="text-slate-500 mt-2 font-medium text-sm md:text-base">Track your job applications and discover new opportunities.</p>
             </div>
             
-            {/* ✨ GLASSMORPHISM PROGRESS CARD */}
             <div className="bg-white/80 backdrop-blur-xl p-5 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] w-full lg:w-80 flex flex-col gap-3 animate-in slide-in-from-right duration-500">
               <div className="flex justify-between items-center text-sm font-extrabold"><span className="text-slate-700 flex items-center gap-1.5"><Trophy size={16} className="text-amber-500 fill-amber-100"/> Profile Setup</span><span className="text-indigo-600">{completionPercentage}%</span></div>
               <div className="w-full bg-slate-100/80 rounded-full h-2.5 overflow-hidden shadow-inner"><div className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 h-2.5 rounded-full transition-all duration-1000 relative overflow-hidden" style={{ width: `${completionPercentage}%` }}>
@@ -197,7 +196,8 @@ export default function Home() {
 
           {currentView === 'profile' ? (
              <div className="bg-white rounded-[2rem] p-6 md:p-10 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-in fade-in zoom-in-95 duration-500">
-             {/* Profile content remains mostly same, just adding border-slate-100 to inputs */}
+             
+             {/* Header Section */}
              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-10 border-b border-slate-100">
                <div className="flex items-center gap-5">
                  <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-blue-600 text-white rounded-2xl flex items-center justify-center text-3xl font-black uppercase shadow-lg shadow-indigo-200/50 transform -rotate-3 hover:rotate-0 transition-all duration-300">{(profileData?.name || user?.email || 'U').charAt(0)}</div>
@@ -219,19 +219,57 @@ export default function Home() {
                </div>
              </div>
 
-             <form onSubmit={handleUpdateProfile} className="space-y-8">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div><label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Full Name</label><input value={profileData.name} onChange={e => setProfileData({...profileData, name: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all text-sm font-medium" /></div>
-                  <div><label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Email Address</label><input value={profileData.email} disabled className="w-full p-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-400 cursor-not-allowed text-sm font-medium" /></div>
-                  <div><label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Contact Number</label><input value={profileData.phone} onChange={e => setProfileData({...profileData, phone: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all text-sm font-medium" /></div>
-                  <div><label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Degree & Branch</label><input value={profileData.degree} onChange={e => setProfileData({...profileData, degree: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all text-sm font-medium" /></div>
-               </div>
-               <button type="submit" disabled={isSaving} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-600 transition-colors shadow-lg shadow-slate-900/20 disabled:opacity-70">{isSaving ? 'Saving Changes...' : 'Save Profile Changes'}</button>
+             <form onSubmit={handleUpdateProfile} className="space-y-10">
+                {/* ✨ Section 1: Personal Information */}
+                <div>
+                  <h3 className="text-lg font-black text-slate-800 mb-5 flex items-center gap-2.5">
+                    <span className="p-2 bg-indigo-50 rounded-lg text-indigo-600"><User size={18}/></span> Personal Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div><label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Full Name</label><input value={profileData.name} onChange={e => setProfileData({...profileData, name: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all text-sm font-medium" /></div>
+                    <div><label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Email Address</label><input value={profileData.email} disabled className="w-full p-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-400 cursor-not-allowed text-sm font-medium" /></div>
+                    <div><label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Contact Number</label><input value={profileData.phone} onChange={e => setProfileData({...profileData, phone: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all text-sm font-medium" /></div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div><label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Age</label><input type="number" value={profileData.age} onChange={e => setProfileData({...profileData, age: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all text-sm font-medium" /></div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Gender</label>
+                        <select value={profileData.gender} onChange={e => setProfileData({...profileData, gender: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all text-sm font-medium text-slate-700">
+                          <option value="">Select</option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="w-full border-t border-slate-100"></div>
+
+                {/* ✨ Section 2: Professional Profile */}
+                <div>
+                  <h3 className="text-lg font-black text-slate-800 mb-5 flex items-center gap-2.5">
+                    <span className="p-2 bg-blue-50 rounded-lg text-blue-600"><Briefcase size={18}/></span> Professional Profile
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div><label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Degree & Branch</label><input value={profileData.degree} onChange={e => setProfileData({...profileData, degree: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all text-sm font-medium" placeholder="e.g. B.Sc Computer Science" /></div>
+                    <div><label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Key Skills</label><input value={profileData.skills} onChange={e => setProfileData({...profileData, skills: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all text-sm font-medium" placeholder="e.g. React, UI/UX Design" /></div>
+                    <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1 flex items-center gap-1.5"><LinkIcon size={14} className="text-slate-400"/> Portfolio / LinkedIn URL</label><input type="url" value={profileData.portfolio_url} onChange={e => setProfileData({...profileData, portfolio_url: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all text-sm font-medium" placeholder="https://..." /></div>
+                    <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">About Me (Bio)</label><textarea rows="3" value={profileData.bio} onChange={e => setProfileData({...profileData, bio: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all resize-none text-sm font-medium" placeholder="Write a short summary about yourself..."></textarea></div>
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="flex justify-end pt-4">
+                  <button type="submit" disabled={isSaving} className="w-full md:w-auto bg-slate-900 text-white px-10 py-4 rounded-2xl font-bold hover:bg-indigo-600 transition-colors shadow-lg shadow-slate-900/20 disabled:opacity-70 flex items-center justify-center gap-2">
+                    <Save size={18} /> {isSaving ? 'Saving Changes...' : 'Save Profile Changes'}
+                  </button>
+                </div>
              </form>
            </div>
           ) : (
           <>
-            {/* ✨ UNIFIED PREMIUM METRIC CARDS */}
+            {/* Cards and Event Lists remain exactly as they were in the ultra-premium version */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
               <div onClick={() => setActiveBox('active')} className={`relative overflow-hidden p-6 rounded-[2rem] cursor-pointer transition-all duration-300 transform hover:-translate-y-1 ${activeBox === 'active' ? 'bg-white border-2 border-emerald-500 shadow-[0_8px_30px_rgb(16,185,129,0.15)]' : 'bg-white border-2 border-transparent shadow-sm hover:shadow-md'}`}>
                 <div className="flex justify-between items-start">
@@ -275,7 +313,6 @@ export default function Home() {
                   <button onClick={() => {setActiveBox(null); setSearchQuery(''); setActiveFilter('All');}} className="p-2 bg-slate-50 rounded-full hover:bg-slate-100 hover:text-slate-800 transition"><X size={18} /></button>
                 </div>
 
-                {/* ✨ PREMIUM FILTERS */}
                 <div className="flex flex-col gap-5 mb-8">
                   <div className="relative w-full group">
                     <Search className="absolute left-4 top-3.5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
