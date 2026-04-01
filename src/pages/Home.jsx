@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/layout/Navbar';
-import { LayoutDashboard, Bookmark, CheckCircle, Bell, MapPin, Calendar, X, User, Save, Briefcase, Link as LinkIcon, FileText, Clock, XCircle, ChevronRight, Sparkles, Trophy } from 'lucide-react'; 
+import { LayoutDashboard, Bookmark, CheckCircle, Bell, MapPin, Calendar, X, User, Save, Briefcase, Link as LinkIcon, FileText, Clock, XCircle, ChevronRight, Sparkles, Trophy, Search, Filter } from 'lucide-react'; 
 import { supabase } from '../supabase'; 
 
 export default function Home() {
@@ -19,6 +19,11 @@ export default function Home() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingResume, setUploadingResume] = useState(false);
+
+  // ✨ PUDHUSA ADD PANNADHU: Search & Filter States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('All');
+  const filterOptions = ['All', 'Software', 'UI/UX', 'Fullstack', 'Walk-in', 'Core'];
 
   useEffect(() => {
     const checkUser = async () => {
@@ -103,14 +108,28 @@ export default function Home() {
   };
   const completionPercentage = calculateCompletion();
 
-  const displayData = activeBox === 'active' ? liveEvents : activeBox === 'applied' ? appliedEvents : activeBox === 'saved' ? savedEvents : [];
+  // ✨ UI UX Logic: SMART FILTERING SYSTEM ✨
+  let displayData = [];
+  if (activeBox === 'active') {
+    displayData = liveEvents.filter(item => {
+      const matchesSearch = (item?.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            (item?.district || '').toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesFilter = activeFilter === 'All' || 
+                            (item?.title || '').toLowerCase().includes(activeFilter.toLowerCase()) ||
+                            (item?.event_type || '').toLowerCase().includes(activeFilter.toLowerCase());
+      return matchesSearch && matchesFilter;
+    });
+  } else if (activeBox === 'applied') {
+    displayData = appliedEvents.filter(item => (item?.title || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  } else if (activeBox === 'saved') {
+    displayData = savedEvents.filter(item => (item?.title || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  }
 
   if (!user) return <div className="flex h-screen items-center justify-center bg-slate-50"><p className="text-xl font-bold text-slate-500 animate-pulse">Loading your workspace...</p></div>;
 
   return (
     <div className="flex h-screen font-sans bg-slate-50 overflow-hidden relative">
       
-      {/* 🖥️ DESKTOP SIDEBAR (Hides on Mobile) */}
       <aside className="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col h-full shadow-sm z-10">
         <div className="p-6 border-b border-slate-100 cursor-pointer" onClick={() => {setCurrentView('dashboard'); setActiveBox(null);}}>
           <h2 className="text-xl font-extrabold text-blue-600 flex items-center gap-2"><LayoutDashboard size={24} /> Student Panel</h2>
@@ -127,7 +146,6 @@ export default function Home() {
       <div className="flex-1 flex flex-col h-full overflow-y-auto">
         <Navbar /> 
         
-        {/* Added pb-28 for Mobile Bottom Nav Spacing */}
         <main className="p-4 md:p-10 max-w-6xl mx-auto w-full pb-28 md:pb-20">
           
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8 md:mb-10">
@@ -154,6 +172,7 @@ export default function Home() {
 
           {currentView === 'profile' ? (
             <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm animate-in fade-in zoom-in-95 duration-300">
+              {/* Profile code remains identical... */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-8 border-b border-slate-100">
                 <div className="flex items-center gap-4 md:gap-5">
                   <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-2xl flex items-center justify-center text-2xl md:text-3xl font-black uppercase shadow-lg shadow-indigo-200 transform rotate-3">{(profileData?.name || user?.email || 'U').charAt(0)}</div>
@@ -231,17 +250,59 @@ export default function Home() {
 
             {activeBox ? (
               <div className="bg-white rounded-3xl border border-slate-200 p-6 md:p-8 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="flex justify-between items-center mb-6 md:mb-8 pb-4 border-b border-slate-100">
+                
+                <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
                   <h3 className="text-xl md:text-2xl font-extrabold text-slate-800 capitalize flex items-center gap-2 md:gap-3">
                     {activeBox === 'active' && <><span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span> Events</>}
                     {activeBox === 'applied' && <><span className="w-3 h-3 rounded-full bg-amber-500"></span> Applied</>}
                     {activeBox === 'saved' && <><span className="w-3 h-3 rounded-full bg-rose-500"></span> Saved</>}
                   </h3>
-                  <button onClick={() => setActiveBox(null)} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 hover:text-slate-800 transition"><X size={18} /></button>
+                  <button onClick={() => {setActiveBox(null); setSearchQuery(''); setActiveFilter('All');}} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 hover:text-slate-800 transition"><X size={18} /></button>
+                </div>
+
+                {/* ✨ SMART SEARCH & FILTERS UI ✨ */}
+                <div className="flex flex-col gap-4 mb-6">
+                  {/* Search Bar */}
+                  <div className="relative w-full">
+                    <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
+                    <input 
+                      type="text" 
+                      placeholder="Search jobs, skills, or locations..." 
+                      value={searchQuery} 
+                      onChange={(e) => setSearchQuery(e.target.value)} 
+                      className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 transition text-sm font-medium" 
+                    />
+                  </div>
+
+                  {/* Filter Chips (Only for Active Events) */}
+                  {activeBox === 'active' && (
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                      <Filter size={16} className="text-slate-400 mr-1 flex-shrink-0" />
+                      {filterOptions.map(filter => (
+                        <button 
+                          key={filter} 
+                          onClick={() => setActiveFilter(filter)} 
+                          className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                            activeFilter === filter 
+                              ? 'bg-slate-900 text-white shadow-md' 
+                              : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                          }`}
+                        >
+                          {filter}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-4">
-                  {displayData.length === 0 ? <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200"><p className="text-slate-500 font-medium text-sm md:text-base">No events to show right now. Keep exploring! 🚀</p></div> : (
+                  {displayData.length === 0 ? (
+                    <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                      <p className="text-slate-500 font-medium text-sm md:text-base">
+                        {searchQuery || activeFilter !== 'All' ? 'No matching jobs found. Try clearing your search! 🔍' : 'No events to show right now. Keep exploring! 🚀'}
+                      </p>
+                    </div>
+                  ) : (
                     displayData.map((item) => (
                       <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 md:p-5 border border-slate-100 rounded-2xl hover:bg-slate-50 hover:shadow-sm transition gap-4 group">
                         <div>
@@ -306,7 +367,6 @@ export default function Home() {
         </main>
       </div>
 
-      {/* 📱 MOBILE BOTTOM NAVIGATION (Shows only on Mobile) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 px-6 py-3 flex justify-between items-center shadow-[0_-10px_30px_rgba(0,0,0,0.05)] pb-safe">
         <button onClick={() => { setCurrentView('dashboard'); setActiveBox('active'); }} className={`flex flex-col items-center gap-1.5 transition-colors ${currentView === 'dashboard' && activeBox === 'active' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
           <Briefcase size={22} className={currentView === 'dashboard' && activeBox === 'active' ? 'fill-blue-50/50' : ''}/>
