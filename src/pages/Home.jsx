@@ -20,10 +20,9 @@ export default function Home() {
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingResume, setUploadingResume] = useState(false);
 
-  // ✨ PUDHUSA ADD PANNADHU: Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
-  const filterOptions = ['All', 'Software', 'UI/UX', 'Fullstack', 'Walk-in', 'Core'];
+  const filterOptions = ['All', 'Software', 'UI/UX', 'Fullstack', 'Walk-in', 'Core', 'Workshop', 'PPT'];
 
   useEffect(() => {
     const checkUser = async () => {
@@ -39,7 +38,8 @@ export default function Home() {
             resume_url: userData.resume_url || ''
           });
         }
-        fetchLiveEvents(); fetchAppliedEvents(user.id); fetchSavedEvents(user.id);
+        fetchLiveEvents(); 
+        fetchUserApplications(user.id);
       } else window.location.href = '/';
     };
     checkUser();
@@ -50,29 +50,52 @@ export default function Home() {
     if (data) setLiveEvents(data);
   };
 
-  const fetchAppliedEvents = async (userId) => {
-    const { data } = await supabase.from('applications').select('id, status, events(*)').eq('student_id', userId).neq('status', 'Saved');
-    if (data) setAppliedEvents(data.map(app => ({ ...app.events, application_id: app.id, app_status: app.status })));
-  };
+  // ✨ FIXED: Database-la pazhaya duplicates irundhalum code clean pannidum
+  const fetchUserApplications = async (userId) => {
+    const { data, error } = await supabase.from('applications').select('id, status, event_id, events(*)').eq('student_id', userId);
+    
+    if (!error && data) {
+      // 🧹 Remove Duplicate Entries (Testing la varra duplicates)
+      const uniqueAppsMap = new Map();
+      data.forEach(app => {
+        const existing = uniqueAppsMap.get(app.event_id);
+        if (!existing || (existing.status === 'Saved' && app.status !== 'Saved')) {
+          uniqueAppsMap.set(app.event_id, app);
+        }
+      });
+      const uniqueData = Array.from(uniqueAppsMap.values());
 
-  const fetchSavedEvents = async (userId) => {
-    const { data } = await supabase.from('applications').select('id, status, events(*)').eq('student_id', userId).eq('status', 'Saved');
-    if (data) setSavedEvents(data.map(app => ({ ...app.events, application_id: app.id })));
+      const applied = uniqueData
+        .filter(app => app.status !== 'Saved')
+        .map(app => ({ ...app.events, application_id: app.id, app_status: app.status }));
+      setAppliedEvents(applied);
+
+      const saved = uniqueData
+        .filter(app => app.status === 'Saved')
+        .map(app => ({ ...app.events, application_id: app.id }));
+      setSavedEvents(saved);
+    }
   };
 
   const handleApply = async (eventId) => {
+    const alreadyApplied = appliedEvents.find(e => e.id === eventId);
+    if (alreadyApplied) return alert("You have already applied for this event!");
+
     const { error } = await supabase.from('applications').insert([{ student_id: user.id, event_id: eventId, status: 'Applied' }]);
-    if (!error) { alert("Successfully Applied! 🎉"); fetchAppliedEvents(user.id); setActiveBox('applied'); }
+    if (!error) { alert("Successfully Applied! 🎉"); fetchUserApplications(user.id); setActiveBox('applied'); }
   };
 
   const handleSave = async (eventId) => {
+    const alreadySaved = savedEvents.find(e => e.id === eventId);
+    if (alreadySaved) return alert("Event already saved!");
+
     const { error } = await supabase.from('applications').insert([{ student_id: user.id, event_id: eventId, status: 'Saved' }]);
-    if (!error) { alert("Job Saved Successfully! 🔖"); fetchSavedEvents(user.id); setActiveBox('saved'); }
+    if (!error) { alert("Job Saved Successfully! 🔖"); fetchUserApplications(user.id); setActiveBox('saved'); }
   };
 
   const handleApplyFromSaved = async (applicationId) => {
     const { error } = await supabase.from('applications').update({ status: 'Applied' }).eq('id', applicationId);
-    if (!error) { alert("Applied from Saved Jobs! 🚀"); fetchAppliedEvents(user.id); fetchSavedEvents(user.id); setActiveBox('applied'); }
+    if (!error) { alert("Applied from Saved Jobs! 🚀"); fetchUserApplications(user.id); setActiveBox('applied'); }
   };
 
   const handleResumeUpload = async (e) => {
@@ -108,7 +131,6 @@ export default function Home() {
   };
   const completionPercentage = calculateCompletion();
 
-  // ✨ UI UX Logic: SMART FILTERING SYSTEM ✨
   let displayData = [];
   if (activeBox === 'active') {
     displayData = liveEvents.filter(item => {
@@ -172,7 +194,6 @@ export default function Home() {
 
           {currentView === 'profile' ? (
             <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm animate-in fade-in zoom-in-95 duration-300">
-              {/* Profile code remains identical... */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-8 border-b border-slate-100">
                 <div className="flex items-center gap-4 md:gap-5">
                   <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-2xl flex items-center justify-center text-2xl md:text-3xl font-black uppercase shadow-lg shadow-indigo-200 transform rotate-3">{(profileData?.name || user?.email || 'U').charAt(0)}</div>
@@ -260,34 +281,17 @@ export default function Home() {
                   <button onClick={() => {setActiveBox(null); setSearchQuery(''); setActiveFilter('All');}} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 hover:text-slate-800 transition"><X size={18} /></button>
                 </div>
 
-                {/* ✨ SMART SEARCH & FILTERS UI ✨ */}
                 <div className="flex flex-col gap-4 mb-6">
-                  {/* Search Bar */}
                   <div className="relative w-full">
                     <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
-                    <input 
-                      type="text" 
-                      placeholder="Search jobs, skills, or locations..." 
-                      value={searchQuery} 
-                      onChange={(e) => setSearchQuery(e.target.value)} 
-                      className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 transition text-sm font-medium" 
-                    />
+                    <input type="text" placeholder="Search jobs, skills, or locations..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 transition text-sm font-medium" />
                   </div>
 
-                  {/* Filter Chips (Only for Active Events) */}
                   {activeBox === 'active' && (
                     <div className="flex items-center gap-2 overflow-x-auto pb-2 hide-scrollbar">
                       <Filter size={16} className="text-slate-400 mr-1 flex-shrink-0" />
                       {filterOptions.map(filter => (
-                        <button 
-                          key={filter} 
-                          onClick={() => setActiveFilter(filter)} 
-                          className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-                            activeFilter === filter 
-                              ? 'bg-slate-900 text-white shadow-md' 
-                              : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                          }`}
-                        >
+                        <button key={filter} onClick={() => setActiveFilter(filter)} className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeFilter === filter ? 'bg-slate-900 text-white shadow-md' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
                           {filter}
                         </button>
                       ))}
@@ -298,9 +302,7 @@ export default function Home() {
                 <div className="space-y-4">
                   {displayData.length === 0 ? (
                     <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                      <p className="text-slate-500 font-medium text-sm md:text-base">
-                        {searchQuery || activeFilter !== 'All' ? 'No matching jobs found. Try clearing your search! 🔍' : 'No events to show right now. Keep exploring! 🚀'}
-                      </p>
+                      <p className="text-slate-500 font-medium text-sm md:text-base">{searchQuery || activeFilter !== 'All' ? 'No matching jobs found. Try clearing your search! 🔍' : 'No events to show right now. Keep exploring! 🚀'}</p>
                     </div>
                   ) : (
                     displayData.map((item) => (
@@ -314,7 +316,43 @@ export default function Home() {
                         </div>
                         
                         <div className="flex items-center gap-2 md:gap-3 mt-2 md:mt-0">
-                          {activeBox === 'active' && (<><button onClick={() => handleSave(item.id)} className="p-2 md:p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl border border-slate-200 transition"><Bookmark size={18} /></button><button onClick={() => handleApply(item.id)} className="flex-1 md:flex-none justify-center px-4 md:px-6 py-2.5 md:py-3 bg-slate-900 text-white text-xs md:text-sm font-bold rounded-xl hover:bg-blue-600 transition shadow-sm flex items-center gap-2">Apply <ChevronRight size={14}/></button></>)}
+                          {activeBox === 'active' && (() => {
+                            // ✨ FIXED: Check if the user already applied/saved this specific event
+                            const appliedDetails = appliedEvents.find(e => e.id === item.id);
+                            const isSaved = savedEvents.find(e => e.id === item.id);
+
+                            if (appliedDetails) {
+                              return (
+                                <span className={`w-full md:w-auto justify-center px-4 py-2 text-xs md:text-sm font-bold rounded-xl border flex items-center gap-2 shadow-sm
+                                  ${appliedDetails.app_status === 'Shortlisted' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 
+                                    appliedDetails.app_status === 'Rejected' ? 'bg-red-50 text-red-700 border-red-200' : 
+                                    'bg-amber-50 text-amber-700 border-amber-200'}`}
+                                >
+                                  {appliedDetails.app_status === 'Shortlisted' ? <CheckCircle size={14}/> : 
+                                   appliedDetails.app_status === 'Rejected' ? <XCircle size={14}/> : 
+                                   <Clock size={14}/>} 
+                                  {appliedDetails.app_status || 'Applied'}
+                                </span>
+                              );
+                            }
+
+                            return (
+                              <>
+                                {!isSaved ? (
+                                  <button onClick={() => handleSave(item.id)} className="p-2 md:p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl border border-slate-200 transition">
+                                    <Bookmark size={18} />
+                                  </button>
+                                ) : (
+                                  <span className="p-2 md:p-3 text-rose-600 bg-rose-50 rounded-xl border border-rose-200">
+                                    <Bookmark size={18} className="fill-rose-500" />
+                                  </span>
+                                )}
+                                <button onClick={() => handleApply(item.id)} className="flex-1 md:flex-none justify-center px-4 md:px-6 py-2.5 md:py-3 bg-slate-900 text-white text-xs md:text-sm font-bold rounded-xl hover:bg-blue-600 transition shadow-sm flex items-center gap-2">
+                                  Apply <ChevronRight size={14}/>
+                                </button>
+                              </>
+                            );
+                          })()}
                           
                           {activeBox === 'applied' && (
                             <span className={`w-full md:w-auto justify-center px-3 py-2 text-xs md:text-sm font-bold rounded-xl border flex items-center gap-2 shadow-sm
