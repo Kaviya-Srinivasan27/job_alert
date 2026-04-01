@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { Mail, Lock, LogIn, UserPlus } from 'lucide-react';
 
-const ADMIN_EMAIL = 'admin@jobalert.tn'; // <-- Unga admin email
+const ADMIN_EMAIL = 'kavisri@gmail.com'; // <-- Unga admin email
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
